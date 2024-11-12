@@ -27,3 +27,7 @@ info:
     name: "gatewayserver"
     description: "Gateway Server application"
     version: "1.0"
+
+logging:
+  level:
+    course.udemy.springboot.gatewayserver: DEBUG
