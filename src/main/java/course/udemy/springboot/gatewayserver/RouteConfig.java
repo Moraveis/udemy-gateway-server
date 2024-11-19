@@ -16,8 +16,9 @@ public class RouteConfig {
                 .route(p ->
                         p.path("/course/accounts/**")
                                 .filters(f ->
-                                        f.rewritePath("/course/accounts/(?<segment>.*)", "/${segment}")
-                                                .addResponseHeader("X-Response-Time", LocalDateTime.now().toString()))
+                                        f.rewritePath("/course/accounts/(?<segment>.*)", "/api/accounts/${segment}")
+                                                .addResponseHeader("X-Response-Time", LocalDateTime.now().toString())
+                                                .circuitBreaker(config -> config.setName("accountsCircuitBreaker")))
                                 .uri("lb://ACCOUNTS"))
                 .route(p ->
                         p.path("/course/loans/**")
