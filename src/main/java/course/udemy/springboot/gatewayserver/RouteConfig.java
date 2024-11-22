@@ -22,13 +22,21 @@ public class RouteConfig {
                                                         .setFallbackUri("forward:/contact-support")))
                                 .uri("lb://ACCOUNTS"))
                 .route(p ->
+                        p.path("/course/customers/**")
+                                .filters(f ->
+                                        f.rewritePath("/course/customers/(?<segment>.*)", "/api/customers/${segment}")
+                                                .addResponseHeader("X-Response-Time", LocalDateTime.now().toString())
+                                                .circuitBreaker(config -> config.setName("costumersCircuitBreaker")
+                                                        .setFallbackUri("forward:/contact-support")))
+                                .uri("lb://ACCOUNTS"))
+                .route(p ->
                         p.path("/course/loans/**")
-                                .filters(f -> f.rewritePath("/course/loans/(?<segment>.*)", "/${segment}")
+                                .filters(f -> f.rewritePath("/course/loans/(?<segment>.*)", "/api/loans/${segment}")
                                         .addResponseHeader("X-Response-Time", LocalDateTime.now().toString()))
                                 .uri("lb://LOANS"))
                 .route(p ->
                         p.path("/course/cards/**")
-                                .filters(f -> f.rewritePath("/course/cards/(?<segment>.*)", "/${segment}")
+                                .filters(f -> f.rewritePath("/course/cards/(?<segment>.*)", "/api/cards/${segment}")
                                         .addResponseHeader("X-Response-Time", LocalDateTime.now().toString()))
                                 .uri("lb://CARDS"))
                 .build();
