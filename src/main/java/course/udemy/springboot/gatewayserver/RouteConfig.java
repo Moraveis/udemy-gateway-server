@@ -5,11 +5,14 @@ import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import org.springframework.cloud.circuitbreaker.resilience4j.ReactiveResilience4JCircuitBreakerFactory;
 import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JConfigBuilder;
 import org.springframework.cloud.client.circuitbreaker.Customizer;
+import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
+import org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiter;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -48,7 +51,9 @@ public class RouteConfig {
                 .route(p ->
                         p.path("/course/cards/**")
                                 .filters(f -> f.rewritePath("/course/cards/(?<segment>.*)", "/api/cards/${segment}")
-                                        .addResponseHeader("X-Response-Time", LocalDateTime.now().toString()))
+                                        .addResponseHeader("X-Response-Time", LocalDateTime.now().toString())
+                                        .requestRateLimiter(config -> config.setRateLimiter(redisRateLimiter())
+                                                .setKeyResolver(userKeyResolver())))
                                 .uri("lb://CARDS"))
                 .build();
     }
@@ -58,5 +63,16 @@ public class RouteConfig {
         return factory -> factory.configureDefault(id -> new Resilience4JConfigBuilder(id)
                 .circuitBreakerConfig(CircuitBreakerConfig.ofDefaults())
                 .timeLimiterConfig(TimeLimiterConfig.custom().timeoutDuration(Duration.ofSeconds(4)).build()).build());
+    }
+
+    @Bean
+    public RedisRateLimiter redisRateLimiter() {
+        return new RedisRateLimiter(1, 1, 1);
+    }
+
+    @Bean
+    KeyResolver userKeyResolver() {
+        return exchange -> Mono.justOrEmpty(exchange.getRequest().getHeaders().getFirst("user"))
+                .defaultIfEmpty("anonymous");
     }
 }
